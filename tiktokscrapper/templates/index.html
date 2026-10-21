@@ -1,0 +1,166 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>TikTok Profile Scraper</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            margin: 25px;
+            background: #f4f6f9;
+            color: #222;
+        }
+
+        .container {
+            max-width: 1050px;
+            margin: auto;
+            background: #fff;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #111;
+        }
+
+        form {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        input[type="text"], input[type="number"] {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        input[type="text"] {
+            width: 240px;
+        }
+
+        input[type="number"] {
+            width: 65px;
+        }
+
+        button, .btn-download {
+            padding: 9px 16px;
+            background: #fe2c55;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+            button:hover {
+                background: #e0244a;
+            }
+
+        .btn-download {
+            background: #25f4ee;
+            color: #000;
+            margin-left: auto;
+        }
+
+        .status {
+            padding: 10px 14px;
+            border-radius: 4px;
+            background: #eef2f7;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .error {
+            background: #fde8e8;
+            color: #9b1c1c;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13.5px;
+        }
+
+        th, td {
+            border: 1px solid #e1e4e8;
+            padding: 9px 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #f1f5f9;
+        }
+
+        a {
+            color: #0969da;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+            a:hover {
+                text-decoration: underline;
+            }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>TikTok Profile Scraper</h2>
+        <form method="POST" onsubmit="document.getElementById('btn-submit').innerText='Extrayendo...'; document.getElementById('btn-submit').disabled=true;">
+            <label><b>Usuario:</b></label>
+            <input type="text" name="username" placeholder="Ej. tiktok" value="{{ username or '' }}" required>
+            <label><b>Scrolls:</b></label>
+            <input type="number" name="scrolls" value="{{ scrolls or 3 }}" min="1" max="15">
+            <button type="submit" id="btn-submit">Extraer Posts</button>
+            {% if datos and datos.estado == 'ok' %}
+            <a class="btn-download" href="/descargar/{{ datos.usuario }}">Descargar JSON</a>
+            {% endif %}
+        </form>
+
+        {% if mensaje %}
+        <div class="status {{ 'error' if es_error else '' }}">{{ mensaje }}</div>
+        {% endif %}
+
+        {% if datos and datos.posts %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID Video</th>
+                    <th>Fecha</th>
+                    <th>Vistas</th>
+                    <th>Likes</th>
+                    <th>Comentarios</th>
+                    <th>Descripción</th>
+                    <th>Enlace</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for post in datos.posts %}
+                <tr>
+                    <td>{{ post.id }}</td>
+                    <td>{{ post.fecha }}</td>
+                    <td>{{ post.estadisticas.vistas }}</td>
+                    <td>{{ post.estadisticas.likes }}</td>
+                    <td>{{ post.estadisticas.comentarios }}</td>
+                    <td>{{ post.descripcion }}</td>
+                    <td><a href="{{ post.url }}" target="_blank">Abrir video</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+</body>
+</html>
