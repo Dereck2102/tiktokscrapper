@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block titulo %}TikTok Scraper{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header class="top">
+        <a class="logo" href="{{ url_for('index') }}">Tik<span>Tok</span> Analytics</a>
+        <nav>
+            <a href="{{ url_for('index') }}">Inicio</a>
+            <a href="{{ url_for('index') }}#cuentas">Cuentas</a>
+            <a href="{{ url_for('index') }}#dataset">Dataset</a>
+        </nav>
+    </header>
+    <main>
+        {% block contenido %}{% endblock %}
+    </main>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
+

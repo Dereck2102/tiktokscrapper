@@ -21,22 +21,27 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="analytics.py" />
+    <Compile Include="exporters.py" />
     <Compile Include="scraper.py" />
+    <Compile Include="storage.py" />
     <Compile Include="tiktokscrapper.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Dockerfile" />
     <Content Include="requirements.txt" />
+    <Content Include="static\app.js" />
+    <Content Include="static\dashboard.js" />
+    <Content Include="static\style.css" />
+    <Content Include="templates\base.html" />
+    <Content Include="templates\dashboard.html" />
     <Content Include="templates\index.html" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="static\" />
     <Folder Include="templates\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
-  <!-- Uncomment the CoreCompile target to enable the Build command in
-       Visual Studio and specify your pre- and post-build commands in
-       the BeforeBuild and AfterBuild targets below. -->
-  <!--<Target Name="CoreCompile" />-->
   <Target Name="BeforeBuild">
   </Target>
   <Target Name="AfterBuild">

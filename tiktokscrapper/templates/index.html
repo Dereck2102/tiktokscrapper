@@ -1,166 +1,159 @@
-﻿<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>TikTok Profile Scraper</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            margin: 25px;
-            background: #f4f6f9;
-            color: #222;
-        }
+{% extends "base.html" %}
+{% block contenido %}
+<div class="grid grid-2">
+    <section class="card">
+        <h2>Nuevo scraping <small>uno o varios perfiles públicos</small></h2>
+        <form id="form-scrape">
+            <label for="usernames">Usuarios o URLs de perfil</label>
+            <textarea id="usernames" name="usernames" placeholder="realmadrid, @khaby.lame&#10;https://www.tiktok.com/@nasa" required></textarea>
 
-        .container {
-            max-width: 1050px;
-            margin: auto;
-            background: #fff;
-            padding: 24px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-        }
+            <label style="margin-top:14px">Modo de extracción</label>
+            <div class="modos">
+                <label class="modo"><input type="radio" name="modo" value="hibrido" checked>
+                    <b>Híbrido</b><span>API interna + DOM.</span></label>
+                <label class="modo"><input type="radio" name="modo" value="red">
+                    <b>Red / API</b><span>Intercepción de red únicamente.</span></label>
+                <label class="modo"><input type="radio" name="modo" value="dom">
+                    <b>Visual (DOM)</b><span>Lectura de elementos HTML renderizados.</span></label>
+                <label class="modo"><input type="radio" name="modo" value="rapido">
+                    <b>Rápido</b><span>Lote inicial sin scroll.</span></label>
+            </div>
 
-        h2 {
-            margin-top: 0;
-            color: #111;
-        }
+            <div class="campos">
+                <div>
+                    <label for="max_scrolls">Scrolls máximos</label>
+                    <input type="number" id="max_scrolls" name="max_scrolls" min="0" max="200" value="{{ defaults.max_scrolls }}">
+                </div>
+                <div>
+                    <label for="max_posts">Límite de posts (0 = sin límite)</label>
+                    <input type="number" id="max_posts" name="max_posts" min="0" max="5000" value="{{ defaults.max_posts }}">
+                </div>
+                <div>
+                    <label for="fecha_desde">Fecha mínima</label>
+                    <input type="date" id="fecha_desde" name="fecha_desde">
+                </div>
+            </div>
 
-        form {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 18px;
-        }
+            <details>
+                <summary>Parámetros de ejecución</summary>
+                <div class="campos">
+                    <div>
+                        <label for="scroll_delay_ms">Pausa entre scrolls (ms)</label>
+                        <input type="number" id="scroll_delay_ms" name="scroll_delay_ms" min="500" max="15000" step="250" value="{{ defaults.scroll_delay_ms }}">
+                    </div>
+                    <div>
+                        <label for="detener_sin_nuevos">Límite sin posts nuevos</label>
+                        <input type="number" id="detener_sin_nuevos" name="detener_sin_nuevos" min="1" max="50" value="{{ defaults.detener_sin_nuevos }}">
+                    </div>
+                    <div>
+                        <label for="reintentos">Reintentos</label>
+                        <input type="number" id="reintentos" name="reintentos" min="0" max="5" value="{{ defaults.reintentos }}">
+                    </div>
+                    <div>
+                        <label for="timeout_carga_s">Timeout de carga (s)</label>
+                        <input type="number" id="timeout_carga_s" name="timeout_carga_s" min="5" max="120" value="{{ defaults.timeout_carga_s }}">
+                    </div>
+                    <div>
+                        <label for="user_agent">User-Agent</label>
+                        <select id="user_agent" name="user_agent">
+                            {% for ua in user_agents %}<option value="{{ ua }}">{{ ua.replace('_', ' ').title() }}</option>{% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="campos">
+                    <label class="check"><input type="checkbox" name="mostrar_navegador"> Mostrar navegador</label>
+                    <label class="check"><input type="checkbox" name="humanizar" checked> Scroll progresivo</label>
+                    <label class="check"><input type="checkbox" name="bloquear_multimedia" checked> Bloquear multimedia</label>
+                    <label class="check"><input type="checkbox" name="sesion_persistente"> Sesión persistente</label>
+                </div>
+            </details>
 
-        input[type="text"], input[type="number"] {
-            padding: 8px 12px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        input[type="text"] {
-            width: 240px;
-        }
-
-        input[type="number"] {
-            width: 65px;
-        }
-
-        button, .btn-download {
-            padding: 9px 16px;
-            background: #fe2c55;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-            button:hover {
-                background: #e0244a;
-            }
-
-        .btn-download {
-            background: #25f4ee;
-            color: #000;
-            margin-left: auto;
-        }
-
-        .status {
-            padding: 10px 14px;
-            border-radius: 4px;
-            background: #eef2f7;
-            margin-bottom: 16px;
-            font-size: 14px;
-        }
-
-        .error {
-            background: #fde8e8;
-            color: #9b1c1c;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13.5px;
-        }
-
-        th, td {
-            border: 1px solid #e1e4e8;
-            padding: 9px 10px;
-            text-align: left;
-        }
-
-        th {
-            background: #f8f9fa;
-            font-weight: 600;
-        }
-
-        tr:hover {
-            background: #f1f5f9;
-        }
-
-        a {
-            color: #0969da;
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-            a:hover {
-                text-decoration: underline;
-            }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>TikTok Profile Scraper</h2>
-        <form method="POST" onsubmit="document.getElementById('btn-submit').innerText='Extrayendo...'; document.getElementById('btn-submit').disabled=true;">
-            <label><b>Usuario:</b></label>
-            <input type="text" name="username" placeholder="Ej. tiktok" value="{{ username or '' }}" required>
-            <label><b>Scrolls:</b></label>
-            <input type="number" name="scrolls" value="{{ scrolls or 3 }}" min="1" max="15">
-            <button type="submit" id="btn-submit">Extraer Posts</button>
-            {% if datos and datos.estado == 'ok' %}
-            <a class="btn-download" href="/descargar/{{ datos.usuario }}">Descargar JSON</a>
-            {% endif %}
+            <div class="acciones" style="margin-top:16px">
+                <button class="btn" id="btn-scrape" type="submit">Iniciar scraping</button>
+                <span class="ayuda" id="form-msg"></span>
+            </div>
         </form>
+    </section>
 
-        {% if mensaje %}
-        <div class="status {{ 'error' if es_error else '' }}">{{ mensaje }}</div>
-        {% endif %}
+    <section class="card">
+        <div class="acciones" style="justify-content:space-between; margin-bottom:6px">
+            <h2 style="margin:0">Cola de ejecución</h2>
+            <button class="btn sec peq" id="btn-limpiar" type="button">Limpiar finalizados</button>
+        </div>
+        <div id="trabajos"><div class="vacio">Sin tareas registradas.</div></div>
+    </section>
+</div>
 
-        {% if datos and datos.posts %}
-        <table>
-            <thead>
-                <tr>
-                    <th>ID Video</th>
-                    <th>Fecha</th>
-                    <th>Vistas</th>
-                    <th>Likes</th>
-                    <th>Comentarios</th>
-                    <th>Descripción</th>
-                    <th>Enlace</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for post in datos.posts %}
-                <tr>
-                    <td>{{ post.id }}</td>
-                    <td>{{ post.fecha }}</td>
-                    <td>{{ post.estadisticas.vistas }}</td>
-                    <td>{{ post.estadisticas.likes }}</td>
-                    <td>{{ post.estadisticas.comentarios }}</td>
-                    <td>{{ post.descripcion }}</td>
-                    <td><a href="{{ post.url }}" target="_blank">Abrir video</a></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% endif %}
+<section class="card seccion" id="cuentas">
+    <h2>Cuentas registradas <small>comparativa según último snapshot</small></h2>
+    {% if cuentas %}
+    <div class="tabla-scroll">
+    <table>
+        <thead>
+            <tr>
+                <th>Cuenta</th>
+                <th class="num">Seguidores</th>
+                <th class="num">Likes totales</th>
+                <th class="num">Likes / seguidor</th>
+                <th class="num">Vistas prom.</th>
+                <th class="num">Alcance %</th>
+                <th class="num">Posts</th>
+                <th class="num">Scrapes</th>
+                <th>Última captura</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for c in cuentas %}
+            <tr data-usuario="{{ c.username }}">
+                <td>
+                    <div class="cuenta">
+                        <img class="avatar" src="{{ c.avatar or '' }}" referrerpolicy="no-referrer" alt="" onerror="this.style.visibility='hidden'">
+                        <div>
+                            <a href="{{ url_for('dashboard', username=c.username) }}"><b>{{ c.nombre or c.username }}</b></a>
+                            {% if c.verificado %}<span class="verif">(Verificado)</span>{% endif %}
+                            <div class="ayuda" style="margin:0">@{{ c.username }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="num" data-fmt>{{ c.seguidores or '' }}</td>
+                <td class="num" data-fmt>{{ c.likes_totales or '' }}</td>
+                <td class="num">{{ c.likes_por_seguidor if c.likes_por_seguidor is not none else '—' }}</td>
+                <td class="num" data-fmt>{{ (c.vistas_promedio or 0)|round|int }}</td>
+                <td class="num">{{ c.alcance_pct if c.alcance_pct is not none else '—' }}</td>
+                <td class="num">{{ c.posts_guardados }}</td>
+                <td class="num">{{ c.num_scrapes }}</td>
+                <td>{{ c.ultimo_scrape }}</td>
+                <td>
+                    <div class="acciones">
+                        <a class="btn peq" href="{{ url_for('dashboard', username=c.username) }}">Dashboard</a>
+                        <button class="btn sec peq" data-reescrapear="{{ c.username }}" type="button">Actualizar</button>
+                        <a class="btn sec peq" href="{{ url_for('exportar_dataset', fmt='csv', usuario=c.username) }}">CSV</a>
+                        <button class="btn peligro peq" data-eliminar="{{ c.username }}" type="button">Eliminar</button>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
     </div>
-</body>
-</html>
+    {% else %}
+    <div class="vacio">No hay cuentas registradas.</div>
+    {% endif %}
+</section>
+
+<section class="card seccion" id="dataset">
+    <h2>Exportación consolidada (Dataset Global)</h2>
+    <div class="acciones">
+        <a class="btn" href="{{ url_for('exportar_dataset', fmt='csv') }}">Exportar CSV</a>
+        {% if xlsx %}<a class="btn" href="{{ url_for('exportar_dataset', fmt='xlsx') }}">Exportar Excel</a>{% endif %}
+        <a class="btn sec" href="{{ url_for('exportar_dataset', fmt='json') }}">Exportar JSON</a>
+        <a class="btn sec" href="{{ url_for('exportar_dataset', fmt='db') }}">Descargar SQLite</a>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% endblock %}
+
