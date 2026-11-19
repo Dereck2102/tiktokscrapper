@@ -361,3 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+
+# Datos locales del scraper (SQLite y perfil de navegador)
+tiktokscrapper/data/
+FodyWeavers.xsd

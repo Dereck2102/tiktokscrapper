@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+{% block titulo %}@{{ username }} · Dashboard TikTok{% endblock %}
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block contenido %}
+<section class="card">
+    <div class="perfil-cab">
+        {% if dash.perfil.avatar %}
+        <img src="{{ dash.perfil.avatar }}" referrerpolicy="no-referrer" alt="@{{ username }}" onerror="this.style.display='none'">
+        {% endif %}
+        <div>
+            <h1>
+                {{ dash.perfil.nombre or ('@' ~ username) }}
+                {% if dash.perfil.verificado %}<span class="verif">(Verificado)</span>{% endif %}
+            </h1>
+            <div class="ayuda">
+                <a href="https://www.tiktok.com/@{{ username }}" target="_blank" rel="noopener">@{{ username }}</a>
+                · Modo: <b>{{ dash.meta.opciones.modo if dash.meta.opciones else 'hibrido' }}</b>
+                · Captura: <b>{{ dash.meta.fecha_scrape }}</b> ({{ dash.meta.duracion_s }}s)
+            </div>
+            {% if dash.perfil.bio %}<div class="bio">{{ dash.perfil.bio }}</div>{% endif %}
+            {% if dash.perfil.enlace_bio %}
+            <div style="margin-top:6px"><a href="{{ dash.perfil.enlace_bio }}" target="_blank" rel="noopener">{{ dash.perfil.enlace_bio }}</a></div>
+            {% endif %}
+        </div>
+
+        <div class="derecha">
+            <div class="acciones">
+                <label for="sel-scrape" style="margin:0">Snapshot:</label>
+                <select id="sel-scrape" style="width:auto">
+                    {% for s in scrapes %}
+                    <option value="{{ s.id }}" {% if s.id == scrape_id %}selected{% endif %}>
+                        #{{ s.id }} · {{ s.fecha }} ({{ s.total_posts }} posts · {{ s.modo }})
+                    </option>
+                    {% endfor %}
+                </select>
+                <a class="btn sec peq" href="{{ url_for('index') }}">Volver</a>
+            </div>
+            <div class="acciones">
+                <a class="btn cian peq" href="{{ url_for('exportar_scrape', scrape_id=scrape_id, fmt='csv') }}">Exportar CSV</a>
+                {% if xlsx %}
+                <a class="btn peq" href="{{ url_for('exportar_scrape', scrape_id=scrape_id, fmt='xlsx') }}">Exportar Excel</a>
+                {% endif %}
+                <a class="btn sec peq" href="{{ url_for('exportar_scrape', scrape_id=scrape_id, fmt='json') }}">Exportar JSON</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="seccion">
+    <div class="kpis">
+        <div class="kpi">
+            <div class="t">Seguidores</div>
+            <div class="v" data-fmt>{{ dash.perfil.seguidores if dash.perfil.seguidores is not none else '' }}</div>
+            <div class="s">Siguiendo: <span data-fmt>{{ dash.perfil.siguiendo if dash.perfil.siguiendo is not none else '' }}</span></div>
+        </div>
+        <div class="kpi">
+            <div class="t">Likes históricos cuenta</div>
+            <div class="v" data-fmt>{{ dash.perfil.likes_totales if dash.perfil.likes_totales is not none else '' }}</div>
+            <div class="s">Videos publicados: <span data-fmt>{{ dash.perfil.videos if dash.perfil.videos is not none else '' }}</span></div>
+        </div>
+        <div class="kpi">
+            <div class="t">Posts analizados</div>
+            <div class="v">{{ dash.kpis.posts_analizados }}</div>
+            <div class="s">API: {{ dash.meta.posts_api or 0 }} · DOM: {{ dash.meta.posts_dom or 0 }}</div>
+        </div>
+        <div class="kpi">
+            <div class="t">Vistas promedio / post</div>
+            <div class="v" data-fmt>{{ dash.kpis.vistas_promedio }}</div>
+            <div class="s">Mediana: <span data-fmt>{{ dash.kpis.vistas_mediana }}</span> · Total: <span data-fmt>{{ dash.kpis.vistas_totales }}</span></div>
+        </div>
+        <div class="kpi">
+            <div class="t">Engagement Rate (ER / vistas)</div>
+            <div class="v">{{ dash.kpis.er_promedio }}%</div>
+            <div class="s">ER / seguidores: {{ dash.kpis.er_seguidores if dash.kpis.er_seguidores is not none else '—' }}%</div>
+        </div>
+        <div class="kpi">
+            <div class="t">Interacciones prom. / post</div>
+            <div class="v" data-fmt>{{ dash.kpis.interacciones_promedio }}</div>
+            <div class="s">Likes: <span data-fmt>{{ dash.kpis.likes_promedio }}</span> · Coment: <span data-fmt>{{ dash.kpis.comentarios_promedio }}</span> · Comp: <span data-fmt>{{ dash.kpis.compartidos_promedio }}</span> · Guard: <span data-fmt>{{ dash.kpis.guardados_promedio }}</span></div>
+        </div>
+        <div class="kpi">
+            <div class="t">Cadencia de publicación</div>
+            <div class="v">{{ dash.kpis.frecuencia_semanal if dash.kpis.frecuencia_semanal is not none else '—' }} <small style="font-size:12px;font-weight:400">/sem</small></div>
+            <div class="s">Cada {{ dash.kpis.dias_entre_posts if dash.kpis.dias_entre_posts is not none else '—' }} días · Duración prom: {{ dash.kpis.duracion_promedio }}s</div>
+        </div>
+        <div class="kpi">
+            <div class="t">Alcance vs Seguidores</div>
+            <div class="v">{{ dash.kpis.alcance_vs_seguidores if dash.kpis.alcance_vs_seguidores is not none else '—' }}%</div>
+            <div class="s">{{ dash.virales|length }} post(s) sobre 3x mediana</div>
+        </div>
+    </div>
+</section>
+
+{% if dash.insights %}
+<section class="card seccion">
+    <h2>Indicadores de rendimiento</h2>
+    <div class="insights">
+        {% for ins in dash.insights %}
+        <div class="insight {{ ins.tipo }}">
+            <b>{{ ins.titulo }}</b>
+            <p>{{ ins.texto }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<section class="grid grid-2 seccion">
+    <div class="card">
+        <h3>Evolución por publicación <small>vistas y ER %</small></h3>
+        <div class="grafico"><canvas id="chart-timeline"></canvas></div>
+    </div>
+    <div class="card">
+        <h3>Rendimiento por duración <small>vistas promedio</small></h3>
+        <div class="grafico"><canvas id="chart-duracion"></canvas></div>
+    </div>
+</section>
+
+<section class="grid grid-3 seccion">
+    <div class="card">
+        <h3>Rendimiento por día de la semana <small>vistas promedio</small></h3>
+        <div class="grafico"><canvas id="chart-dias"></canvas></div>
+    </div>
+    <div class="card">
+        <h3>Rendimiento por hora de publicación <small>vistas promedio (0-23h)</small></h3>
+        <div class="grafico"><canvas id="chart-horas"></canvas></div>
+    </div>
+    <div class="card">
+        <h3>Rendimiento por hashtag <small>vistas promedio</small></h3>
+        <div class="grafico"><canvas id="chart-hashtags"></canvas></div>
+    </div>
+</section>
+
+{% if dash.historial and dash.historial|length >= 2 %}
+<section class="card seccion">
+    <h3>Evolución histórica de seguidores</h3>
+    <div class="grafico"><canvas id="chart-historial"></canvas></div>
+</section>
+{% endif %}
+
+<section class="grid grid-3 seccion">
+    <div class="card">
+        <h3>Top 5 por vistas</h3>
+        {% for p in dash.top_vistas %}
+        <div class="mini-post">
+            <div class="pos">#{{ loop.index }}</div>
+            <div class="info">
+                <div class="desc"><a href="{{ p.url }}" target="_blank" rel="noopener">{{ p.desc or p.id }}</a></div>
+                <div class="met">
+                    <span class="chip rosa" data-fmt>{{ p.vistas }}</span> vistas
+                    {% if p.multiplicador %}· <span class="chip verde">{{ p.multiplicador }}x mediana</span>{% endif %}
+                    {% if p.er is not none %}· ER {{ p.er }}%{% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="vacio">Sin datos de vistas</div>
+        {% endfor %}
+    </div>
+
+    <div class="card">
+        <h3>Top 5 por Engagement Rate</h3>
+        {% for p in dash.top_er %}
+        <div class="mini-post">
+            <div class="pos">#{{ loop.index }}</div>
+            <div class="info">
+                <div class="desc"><a href="{{ p.url }}" target="_blank" rel="noopener">{{ p.desc or p.id }}</a></div>
+                <div class="met">
+                    <span class="chip verde">ER {{ p.er }}%</span>
+                    · <span data-fmt>{{ p.vistas }}</span> vistas · Likes: <span data-fmt>{{ p.likes }}</span>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="vacio">Sin métricas de interacción disponibles</div>
+        {% endfor %}
+    </div>
+
+    <div class="card">
+        <h3>Hashtags con mayor alcance</h3>
+        {% for h in dash.hashtags[:8] %}
+        <div class="mini-post">
+            <div class="pos">#{{ loop.index }}</div>
+            <div class="info">
+                <div class="desc"><b>#{{ h.tag }}</b> <span class="chip">{{ h.usos }} post(s)</span></div>
+                <div class="met">
+                    Prom: <span data-fmt>{{ h.vistas_promedio }}</span> vistas · ER {{ h.er_promedio }}%
+                    {% if h.indice %}· <span class="chip {{ 'verde' if h.indice >= 1 else '' }}">{{ h.indice }}x mediana</span>{% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="vacio">No se registraron hashtags</div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="card seccion">
+    <div class="acciones" style="justify-content:space-between; margin-bottom:10px">
+        <h2 style="margin:0">Publicaciones extraídas ({{ dash.posts|length }})</h2>
+        <div class="filtros" style="margin:0">
+            <input type="text" id="filtro-texto" placeholder="Filtrar por descripción o hashtag...">
+            <select id="filtro-orden">
+                <option value="fecha-desc">Más recientes</option>
+                <option value="vistas-desc">Mayor número de vistas</option>
+                <option value="likes-desc">Más likes</option>
+                <option value="er-desc">Mayor Engagement Rate</option>
+                <option value="comentarios-desc">Más comentarios</option>
+                <option value="guardados-desc">Más guardados</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="tabla-scroll">
+        <table id="tabla-posts">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th class="num">Dur.</th>
+                    <th class="num">Vistas</th>
+                    <th class="num">Likes</th>
+                    <th class="num">Coment.</th>
+                    <th class="num">Comp.</th>
+                    <th class="num">Guard.</th>
+                    <th class="num">ER %</th>
+                    <th>Hashtags</th>
+                    <th>Descripción</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for p in dash.posts %}
+                <tr data-fecha="{{ p.timestamp or 0 }}"
+                    data-vistas="{{ p.estadisticas.vistas or 0 }}"
+                    data-likes="{{ p.estadisticas.likes or 0 }}"
+                    data-er="{{ p.er if p.er is not none else -1 }}"
+                    data-comentarios="{{ p.estadisticas.comentarios or 0 }}"
+                    data-guardados="{{ p.estadisticas.guardados or 0 }}"
+                    data-texto="{{ (p.descripcion or '')|lower }} {{ (p.hashtags or [])|join(' ')|lower }}">
+                    <td>
+                        {{ p.fecha or 'Reciente' }}
+                        {% if p.fijado %}<span class="chip rosa">Fijado</span>{% endif %}
+                    </td>
+                    <td>{{ p.tipo }}</td>
+                    <td class="num">{{ (p.duracion ~ 's') if p.duracion else '—' }}</td>
+                    <td class="num" data-fmt>{{ p.estadisticas.vistas if p.estadisticas.vistas is not none else '' }}</td>
+                    <td class="num" data-fmt>{{ p.estadisticas.likes if p.estadisticas.likes is not none else '' }}</td>
+                    <td class="num" data-fmt>{{ p.estadisticas.comentarios if p.estadisticas.comentarios is not none else '' }}</td>
+                    <td class="num" data-fmt>{{ p.estadisticas.compartidos if p.estadisticas.compartidos is not none else '' }}</td>
+                    <td class="num" data-fmt>{{ p.estadisticas.guardados if p.estadisticas.guardados is not none else '' }}</td>
+                    <td class="num">{{ (p.er ~ '%') if p.er is not none else '—' }}</td>
+                    <td>
+                        {% for h in (p.hashtags or [])[:4] %}
+                        <span class="chip">#{{ h }}</span>
+                        {% endfor %}
+                    </td>
+                    <td style="max-width:340px">{{ p.descripcion or '—' }}</td>
+                    <td><a class="btn sec peq" href="{{ p.url }}" target="_blank" rel="noopener">Abrir</a></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+window.DASH_DATA = {{ {
+    "linea_tiempo": dash.linea_tiempo,
+    "dias": dash.dias,
+    "horas": dash.horas,
+    "duraciones": dash.duraciones,
+    "hashtags": dash.hashtags[:12],
+    "historial": dash.historial,
+    "username": username,
+} | tojson }};
+</script>
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+{% endblock %}
+
